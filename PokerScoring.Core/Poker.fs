@@ -86,19 +86,18 @@ let GetHighCard = List.ofSeq >> GetRankedCard (>)
 
 let GetLowCard = List.ofSeq >> GetRankedCard (<)
 
+// returns Some(Card) where Card is the highest card of the sequence, or None (not sequential)
 let (|Sequential|_|) cards =
-    let orderedCardValues = cards |> List.ofSeq |> List.map CardValue |> List.sort
-    // can this be refactored to use fold?
-    let rec folder current cardVals =
-        match cardVals with
-            // if the collection is empty, then = sequential.
-            | [] 
-            // since Ace can be a high card OR a 1 in a straight, check if last item is an Ace and current is a 5 or 13 = sequential
-            | [14] when current = 5 || current = 13 -> cards |> GetHighCard |> Some 
-            | head :: vals when (current+1) = head -> folder head vals
+    // returns a tuple (isSequential, nextCard). Input is previous tuple match and next card. Note logic for Ace=1 or 14
+    let folder (seq, c1) c2 = (CardValue c2) = (CardValue c1) - 1 || ((CardValue c1) = 14 && (CardValue c2) = 5), c2
+    cards 
+        |> List.sortByDescending CardValue
+        |> function 
+            | h :: tail -> 
+                if tail 
+                    |> List.scan folder (true, h) 
+                    |> Seq.forall (fun (isSeq, _) -> isSeq) then cards |> GetHighCard |> Some else None
             | _ -> None
-    // returns Some(Card) where Card is the highest card of the sequence, or None (not sequential)
-    folder (List.head(orderedCardValues)) (List.tail(orderedCardValues))
   
 // returns Some(Card) where Card is the highest card of the match, or None (not one of a kind)
 let (|OneOfAKind|_|) cards = 
@@ -116,7 +115,7 @@ let (|HasMatch|_|) i k cards =
             |> Seq.filter (fun (k, v) -> v |> Seq.length = i)        
     if matches |> Seq.length = k then matches |> Seq.head |> (fun (k, v) -> v |> Seq.head) |> Some else None
 
-let GetHandScore (cards:Card seq) = 
+let GetHandScore (cards:Card list) = 
     match cards with
     | Sequential c & OneOfAKind _ -> if cards |> GetLowCard |> CardValue = 10 then RoyalFlush else StraightFlush c
     | HasMatch 4 1 c -> FourOfAKind c
