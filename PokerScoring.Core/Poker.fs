@@ -92,8 +92,9 @@ let (|Sequential|_|) cards =
     let rec folder current cardVals =
         match cardVals with
             // if the collection is empty, then = sequential.
+            | [] 
             // since Ace can be a high card OR a 1 in a straight, check if last item is an Ace and current is a 5 or 13 = sequential
-            | [] | [14] when current = 5 || current = 13 -> cards |> GetHighCard |> Some 
+            | [14] when current = 5 || current = 13 -> cards |> GetHighCard |> Some 
             | head :: vals when (current+1) = head -> folder head vals
             | _ -> None
     // returns Some(Card) where Card is the highest card of the sequence, or None (not sequential)
@@ -111,9 +112,9 @@ let (|OneOfAKind|_|) cards =
 let (|HasMatch|_|) i k cards = 
     let matches = 
         cards 
-            |> Seq.groupBy (fun i -> CardValue i)
+            |> Seq.groupBy CardValue
             |> Seq.filter (fun (k, v) -> v |> Seq.length = i)        
-    if matches |> Seq.length = k then matches |> Seq.head |> (fun (k, v) -> v |> GetHighCard) |> Some else None
+    if matches |> Seq.length = k then matches |> Seq.head |> (fun (k, v) -> v |> Seq.head) |> Some else None
 
 let GetHandScore (cards:Card seq) = 
     match cards with
