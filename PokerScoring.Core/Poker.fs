@@ -96,7 +96,7 @@ let (|Sequential|_|) cards =
             | h :: tail -> 
                 if tail 
                     |> List.scan folder (true, h) 
-                    |> Seq.forall (fun (isSeq, _) -> isSeq) then cards |> GetHighCard |> Some else None
+                    |> Seq.forall fst then cards |> GetHighCard |> Some else None
             | _ -> None
   
 // returns Some(Card) where Card is the highest card of the match, or None (not one of a kind)
@@ -112,8 +112,8 @@ let (|HasMatch|_|) i k cards =
     let matches = 
         cards 
             |> Seq.groupBy CardValue
-            |> Seq.filter (fun (k, v) -> v |> Seq.length = i)        
-    if matches |> Seq.length = k then matches |> Seq.head |> (fun (k, v) -> v |> Seq.head) |> Some else None
+            |> Seq.filter (snd >> Seq.length >> (=) i)        
+    if matches |> Seq.length = k then matches |> Seq.head |> (snd >> Seq.head) |> Some else None
 
 let GetHandScore (cards:Card list) = 
     match cards with
